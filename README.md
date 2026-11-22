@@ -2,7 +2,10 @@
 
 A 3D-printable motorized pan base for the UniFi G3 Flex camera. It turns the camera ±110° under Home Assistant control. Inside are a cheap 28BYJ-48 stepper motor, a printed 5:1 internal gear and an ESP32-S3 running ESPHome.
 
-![Assembled turntable](renders/assembly.png)
+<p align="center">
+  <img src="media/turntable.gif" alt="The turntable panning a G3 Flex from facing backwards to facing forwards and back (4× speed)" height="360">
+  <img src="renders/assembly.png" alt="Rendered model of the assembled turntable" height="360">
+</p>
 
 - **Cheap parts:** one motor with its driver board, one small ESP32, a few screws. No bearings.
 - **Prints without supports** in PETG.
@@ -128,4 +131,4 @@ Designed in OpenSCAD with Claude through [openscad-mcp-server](https://github.co
 
 ## License
 
-MIT, see [LICENSE](LICENSE). This covers the OpenSCAD source, the STLs, the renders and the config files.
+MIT, see [LICENSE](LICENSE). This covers the OpenSCAD source, the STLs, the renders, the demo GIF and the config files.
