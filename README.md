@@ -14,6 +14,21 @@ A 3D-printable motorized pan base for the UniFi G3 Flex camera. It turns the cam
 
 The model is fully parametric OpenSCAD (`g3flex_pan_turntable.scad`), so you can adapt it to other cameras or boards.
 
+## Requirements
+
+The mechanical part works for anyone with a 3D printer. The firmware and the Home Assistant parts assume this setup:
+
+| You need | Why |
+|---|---|
+| A **UniFi G3 Flex** camera | The cup is sized for its round body (Ø48.35 mm). For other cameras, change `camera_dia` and the other *Camera cup* settings, or use the flat `platform_adapter` instead. |
+| A 3D printer that can print **PETG** | The largest single part is 92 mm in diameter. `rotating_cup.stl` puts two parts side by side (181 × 87 mm). On a smaller bed, use your slicer's *Split to objects* and print them one at a time. |
+| **Home Assistant** with the **ESPHome** integration | For flashing the board and for control. Without Home Assistant, the ESPHome firmware still works through its API, but the provided script, automation and card won't apply. |
+| 2.4 GHz Wi-Fi | ESP32 boards don't support 5 GHz. |
+| Optional: **UniFi Protect** integration | Only for the privacy-mode automation. It provides the camera's privacy switch. |
+| Optional: **WebRTC Camera** card from [HACS](https://hacs.xyz/) | Only for the dashboard card with left/right buttons. |
+
+See [Adapting it to your setup](#adapting-it-to-your-setup) for the values that come from the original install and that you will probably need to change.
+
 ## How it works
 
 ![Exploded view](renders/assembly_exploded.png)
@@ -54,7 +69,7 @@ A 14-tooth pinion on the motor shaft drives the internal gear (5:1). A small tab
 | STL | Orientation | Contents |
 |---|---|---|
 | `stl/base_housing.stl` | floor down | Housing, sliding ledge, motor and PCB mounts, hard-stop posts |
-| `stl/rotating_cup.stl` | as plated | Rotor (deck down) + cup adapter (flange down). Both on one plate. |
+| `stl/rotating_cup.stl` | as plated | Rotor (deck down) + cup adapter (flange down), side by side on one 181 × 87 mm plate |
 | `stl/pinion_14t_m1.stl` | flat, either side | 14-tooth module-1 pinion for the 28BYJ-48's 5 mm double-flat shaft. Print it unless you already have a 14T m1 pinion. |
 | `stl/platform_adapter.stl` | optional | Flat Ø86 mm platform (4× M3 on Ø78 mm) instead of the camera cup, for other payloads |
 
@@ -113,6 +128,28 @@ The firmware only moves the motor. Home Assistant decides where the camera point
 | [`automation_privacy_mode.yaml`](home-assistant/automation_privacy_mode.yaml) | Privacy mode on (the switch from the UniFi Protect integration): turn to −110°. Off: go back to the default +30°. |
 | [`dashboard_cat_cam_card.yaml`](home-assistant/dashboard_cat_cam_card.yaml) | Camera card with left / right / home buttons over the live view. Needs the [WebRTC Camera](https://github.com/AlexxIT/WebRTC) custom card (install via HACS). |
 
+## Adapting it to your setup
+
+The config files come from one real install. Check these before you use them:
+
+**Home Assistant entity IDs.** These are the IDs on the original install. Yours will differ, so find them under *Settings → Devices & services → Entities* and replace them in all three `home-assistant/` files.
+
+| In the files | What it is | On a fresh install it is probably |
+|---|---|---|
+| `number.living_room_camplatform_g3_flex_pan_angle` | The pan angle from the ESPHome firmware | `number.camplatform_g3_flex_pan_angle` (the `living_room_` prefix came from the original install) |
+| `switch.g3_flex_privatsphare_modus` | The camera's privacy-mode switch from UniFi Protect | `switch.<camera name>_privacy_mode`. The original install runs Home Assistant in German. |
+| `camera.living_room_cat_cam_high_resolution_channel` | The camera stream shown on the card | `camera.<camera name>_high_resolution_channel` |
+
+**Firmware values** (`firmware/camplatform.yaml`):
+- **Device name.** `name: camplatform` sets the hostname and the start of the entity IDs. Rename it if you build more than one.
+- **Pins.** GPIO1–GPIO4 drive the ULN2003. If you use other pins or another ESP32 board, change `pin_a`…`pin_d` (and the `board:`).
+- **Direction.** On the original build, positive angles turn the camera to the right. Motors and wiring vary. If yours turns the other way, swap `pin_a`↔`pin_d` and `pin_b`↔`pin_c`, or swap `left` and `right` in the script.
+- **Range.** `stop_deg` (115) must match the printed hard stops. If you change `sweep_angle` in the model, change it here too, and keep the `min_value`/`max_value` of the pan angle (±110) about 5° inside it.
+
+**Home Assistant values:**
+- **Angles.** The default position (+30°), the privacy position (−110°) and the nudge step (15°) suit the original room. Change them in `script_cat_cam_pan.yaml` and `automation_privacy_mode.yaml`.
+- **Names.** "Cat cam" is just the name from the original install. Rename the script, the automation and the card to whatever you like.
+
 ## Customizing the model
 
 Open `g3flex_pan_turntable.scad` in OpenSCAD and choose what to show or export with the `part` setting in the Customizer. `assembly` shows everything, and the plate names produce the STLs. The `check_*` parts are views for checking collisions.
@@ -128,6 +165,8 @@ Dimensions: 92 mm diameter, 73.4 mm total height, camera seat at 45.4 mm. At the
 ## Credits
 
 Designed in OpenSCAD with Claude through [openscad-mcp-server](https://github.com/ClemensSchartmueller/openscad-mcp-server), an MCP server that lets an AI assistant render and check OpenSCAD models.
+
+**AI disclosure:** the OpenSCAD model, the firmware, the Home Assistant config and this README were created with an AI assistant (Claude) under human direction. The design was printed, assembled and tested on real hardware, as the demo GIF shows. Still, check the dimensions against your own parts before printing.
 
 ## License
 
