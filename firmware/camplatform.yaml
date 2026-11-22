@@ -1,0 +1,172 @@
+substitutions:
+  name: camplatform
+  friendly_name: CamPlatform
+  # 28BYJ-48 (~63.68:1, ~2038 full steps/rev) x 5:1 ring gear = ~10189 steps per pan turn
+  steps_per_deg: "28.30"
+  # Hard stops in the printed base sit at +/-115 deg
+  stop_deg: "115"
+  # Extra travel past the expected stop position during homing (stall time ~1 s)
+  home_overshoot_deg: "10"
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      - script.execute:
+          id: home_pan
+          full_sweep: false
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret camplatform_api_key
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Camplatform Fallback"
+
+captive_portal:
+
+# Write the tracked position to flash right away, so a power cut can't restore a stale value
+preferences:
+  flash_write_interval: 0s
+
+globals:
+  # Last position the rotor actually settled at, and whether it is trustworthy
+  # (cleared while moving, so a power cut mid-move forces a full homing sweep).
+  - id: last_deg
+    type: float
+    restore_value: yes
+    initial_value: "0"
+  - id: last_valid
+    type: bool
+    restore_value: yes
+    initial_value: "false"
+  - id: moving
+    type: bool
+    initial_value: "false"
+
+stepper:
+  - platform: uln2003
+    id: pan_stepper
+    pin_a: GPIO1
+    pin_b: GPIO2
+    pin_c: GPIO3
+    pin_d: GPIO4
+    max_speed: 300 steps/s
+    acceleration: 200 steps/s^2
+    deceleration: 200 steps/s^2
+    sleep_when_done: true
+
+interval:
+  - interval: 250ms
+    then:
+      - if:
+          condition:
+            lambda: "return id(moving) && id(pan_stepper).has_reached_target();"
+          then:
+            - lambda: |-
+                id(moving) = false;
+                id(last_deg) = id(pan_stepper).current_position / ${steps_per_deg};
+                id(last_valid) = true;
+
+script:
+  - id: move_to
+    mode: restart
+    parameters:
+      deg: float
+    then:
+      - if:
+          condition:
+            not:
+              script.is_running: home_pan
+          then:
+            - lambda: |-
+                id(last_valid) = false;
+                id(moving) = true;
+            - stepper.set_target:
+                id: pan_stepper
+                target: !lambda "return (int) lroundf(deg * ${steps_per_deg});"
+
+  # Drive into the negative hard stop (the motor just skips steps there), call that
+  # -115 deg, then return to the requested angle. If the last settled position is
+  # known, only travel that far plus a small overshoot; otherwise sweep the full range.
+  - id: home_pan
+    mode: single
+    parameters:
+      full_sweep: bool
+    then:
+      - stepper.set_speed:
+          id: pan_stepper
+          speed: 250 steps/s
+      - stepper.report_position:
+          id: pan_stepper
+          position: 0
+      - stepper.set_target:
+          id: pan_stepper
+          target: !lambda |-
+            float start = ${stop_deg};
+            if (!full_sweep && id(last_valid)) start = std::clamp(id(last_deg), -${stop_deg}.0f, ${stop_deg}.0f);
+            return (int) (-(start + ${stop_deg} + ${home_overshoot_deg}) * ${steps_per_deg});
+      - lambda: |-
+          id(moving) = false;
+          id(last_valid) = false;
+      - wait_until:
+          condition:
+            lambda: "return id(pan_stepper).has_reached_target();"
+          timeout: 45s
+      - stepper.report_position:
+          id: pan_stepper
+          position: !lambda "return (int) (-${stop_deg} * ${steps_per_deg});"
+      - stepper.set_speed:
+          id: pan_stepper
+          speed: 300 steps/s
+      - lambda: |-
+          id(moving) = true;
+      - stepper.set_target:
+          id: pan_stepper
+          target: !lambda |-
+            float a = id(pan_angle).state;
+            if (isnan(a)) a = 0;
+            return (int) lroundf(a * ${steps_per_deg});
+
+number:
+  - platform: template
+    name: "G3 Flex Pan Angle"
+    id: pan_angle
+    icon: "mdi:pan-horizontal"
+    unit_of_measurement: "°"
+    min_value: -110
+    max_value: 110
+    step: 1
+    optimistic: true
+    restore_value: true
+    initial_value: 0
+    set_action:
+      # While homing, move_to ignores this; homing moves to the latest value when done.
+      - script.execute:
+          id: move_to
+          deg: !lambda "return x;"
+
+button:
+  - platform: template
+    name: "Home Pan"
+    icon: "mdi:home-import-outline"
+    on_press:
+      - script.execute:
+          id: home_pan
+          full_sweep: true

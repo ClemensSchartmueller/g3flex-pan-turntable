@@ -25,7 +25,7 @@ PETG, 0.2 mm layers, 3–4 perimeters, no supports.
 3. Optional: put a thin film of grease in the ledge groove.
 4. Turn the rotor so its stop lug (opposite the pinion) points to −X, then drop it into the base rim. Gravity holds it down; the 1.5 mm rim engagement keeps it centred.
 5. Screw the cup adapter onto the rotor with the slot at the rear. Insert the camera, then tighten the front set screw.
-6. Firmware: the 28BYJ-48's real gear ratio is about 63.68:1, which gives about 2038 full steps per motor turn and about 10189 per rotor turn (often quoted as 2048 / 10240). Expect about 0.7° of play from gear backlash. Home softly against a hard stop, or set your limits inside ±115°.
+6. Firmware: the 28BYJ-48's real gear ratio is about 63.68:1, which gives about 2038 full steps per motor turn and about 10189 per rotor turn (often quoted as 2048 / 10240). Expect about 0.7° of play from gear backlash. Home softly against a hard stop, or set your limits inside ±115°. The ESPHome config in `firmware/` does both.
 
 ## Notes
 - Total height is 73.4 mm, with the camera seat at 45.4 mm. This revision adds 7 mm to the base for the ESP32 wiring. It allows 12 mm below the modeled 12 mm plug housings for the wires to turn inward. The existing rotor, cup and pinion fit this revision.
@@ -34,3 +34,18 @@ PETG, 0.2 mm layers, 3–4 perimeters, no supports.
 - The only flat bridge is the 9.5 mm span over the USB-C cutout. Every other downward-facing surface is at 45° or steeper.
 - `usb_recess` (0.8 mm) sets how far the receptacle sits behind the flat pad.
 - `dupont_len`, `dupont_wire_bend` and `esp_row_x` describe your plugs and board. Measure them and re-export if yours differ.
+
+## Firmware and Home Assistant
+The ESP32 runs ESPHome. The firmware only drives the motor and homes it. Home Assistant decides where to point the camera.
+
+| File | What it does |
+|---|---|
+| `firmware/camplatform.yaml` | ESPHome config. It exposes a `Pan Angle` number (−110…110°) and a `Home Pan` button. At boot it homes against the −115° stop, then returns to the last angle. |
+| `home-assistant/script_cat_cam_pan.yaml` | `script.cat_cam_pan`: `left` / `right` move 15°, `default` goes to +30°. |
+| `home-assistant/automation_privacy_mode.yaml` | Cat cam privacy on → −110°, off → default (+30°). |
+| `home-assistant/dashboard_cat_cam_card.yaml` | WebRTC Camera card with left / right / home overlay buttons calling the script. |
+
+- Before compiling, add `camplatform_api_key` (a base64 API encryption key) and the usual `wifi_ssid` / `wifi_password` to ESPHome's `secrets.yaml`.
+- Positive angles turn the camera to the right, as seen from behind it.
+- Homing: the firmware saves the position where the rotor last stopped. At boot it only travels that far plus 10° into the stop, which is about a 1 s stall. If power was lost mid-move, or you press `Home Pan`, it sweeps the full range instead.
+- The HA entity IDs are from the original install (`number.living_room_camplatform_g3_flex_pan_angle`, `switch.g3_flex_privatsphare_modus`, `camera.living_room_cat_cam_high_resolution_channel`). Change them to match yours.

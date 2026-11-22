@@ -1,0 +1,32 @@
+# Automation: automation.cat_cam_platform_follows_privacy_mode  (Edit in YAML)
+alias: Cat cam platform follows privacy mode
+description: 'Privacy on: turn the cat cam away to -110°. Privacy off: back to the default +30° (script.cat_cam_pan).'
+triggers:
+- trigger: switch.turned_on
+  id: privacy_on
+  target:
+    entity_id: switch.g3_flex_privatsphare_modus
+- trigger: switch.turned_off
+  id: privacy_off
+  target:
+    entity_id: switch.g3_flex_privatsphare_modus
+conditions: []
+actions:
+- choose:
+  - conditions:
+    - condition: trigger
+      id: privacy_on
+    sequence:
+    - action: number.set_value
+      target:
+        entity_id: number.living_room_camplatform_g3_flex_pan_angle
+      data:
+        value: -110
+  - conditions:
+    - condition: trigger
+      id: privacy_off
+    sequence:
+    - action: script.cat_cam_pan
+      data:
+        direction: default
+mode: restart

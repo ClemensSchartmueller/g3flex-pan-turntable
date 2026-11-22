@@ -1,0 +1,43 @@
+# Script: script.cat_cam_pan  (Settings > Automations & scenes > Scripts > Add > Edit in YAML)
+alias: Cat Cam Pan
+description: 'Turn the cat cam turntable: nudge left/right by 15° or go to the default +30°. Used by the cat cam card and the privacy-mode automation. Positive angles turn the camera to the right (seen
+  from behind the camera).'
+icon: mdi:pan-horizontal
+mode: queued
+fields:
+  direction:
+    name: Direction
+    required: true
+    default: default
+    selector:
+      select:
+        options:
+        - left
+        - right
+        - default
+sequence:
+- choose:
+  - conditions:
+    - condition: template
+      value_template: '{{ direction == ''left'' }}'
+    sequence:
+    - action: number.set_value
+      target:
+        entity_id: number.living_room_camplatform_g3_flex_pan_angle
+      data:
+        value: '{{ [states(''number.living_room_camplatform_g3_flex_pan_angle'') | float(0) - 15, -110] | max }}'
+  - conditions:
+    - condition: template
+      value_template: '{{ direction == ''right'' }}'
+    sequence:
+    - action: number.set_value
+      target:
+        entity_id: number.living_room_camplatform_g3_flex_pan_angle
+      data:
+        value: '{{ [states(''number.living_room_camplatform_g3_flex_pan_angle'') | float(0) + 15, 110] | min }}'
+  default:
+  - action: number.set_value
+    target:
+      entity_id: number.living_room_camplatform_g3_flex_pan_angle
+    data:
+      value: 30
