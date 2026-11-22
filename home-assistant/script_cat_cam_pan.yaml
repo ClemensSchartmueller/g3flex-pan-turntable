@@ -1,4 +1,6 @@
 # Script: script.cat_cam_pan  (Settings > Automations & scenes > Scripts > Add > Edit in YAML)
+# Entity IDs to change to match your install:
+#   number.living_room_camplatform_g3_flex_pan_angle  (from the ESPHome device; "G3 Flex Pan Angle")
 alias: Cat Cam Pan
 description: 'Turn the cat cam turntable: nudge left/right by 15° or go to the default +30°. Used by the cat cam card and the privacy-mode automation. Positive angles turn the camera to the right (seen
   from behind the camera).'

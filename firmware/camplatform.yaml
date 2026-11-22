@@ -1,3 +1,10 @@
+# ESPHome firmware for the G3 Flex pan turntable.
+# Board: ESP32-S3 SuperMini. The generic esp32-s3-devkitc-1 board definition works for it.
+# Wiring: GPIO1..GPIO4 -> ULN2003 IN1..IN4, ESP 5V -> ULN2003 "+", GND -> ULN2003 "-".
+# Needs in ESPHome's secrets.yaml: wifi_ssid, wifi_password, camplatform_api_key
+# (generate the key with `openssl rand -base64 32`, or let the ESPHome wizard make one).
+# First setup without Wi-Fi: the board opens the "Camplatform Fallback" access point.
+
 substitutions:
   name: camplatform
   friendly_name: CamPlatform

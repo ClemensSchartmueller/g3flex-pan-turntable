@@ -1,4 +1,7 @@
 # Automation: automation.cat_cam_platform_follows_privacy_mode  (Edit in YAML)
+# Entity IDs to change to match your install:
+#   number.living_room_camplatform_g3_flex_pan_angle  (from the ESPHome device; "G3 Flex Pan Angle")
+#   switch.g3_flex_privatsphare_modus  (the camera's privacy-mode switch from the UniFi Protect integration)
 alias: Cat cam platform follows privacy mode
 description: 'Privacy on: turn the cat cam away to -110°. Privacy off: back to the default +30° (script.cat_cam_pan).'
 triggers:

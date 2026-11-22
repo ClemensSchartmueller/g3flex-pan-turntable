@@ -1,4 +1,7 @@
-# Cat cam card on the default dashboard (needs the WebRTC Camera custom card)
+# Cat cam card for a Lovelace dashboard. Needs the WebRTC Camera custom card (AlexxIT/WebRTC, install via HACS).
+# The left / right / home overlay buttons call script.cat_cam_pan. The card is hidden while privacy mode is on.
+# Entity IDs to change to match your install:
+#   camera.living_room_cat_cam_high_resolution_channel, switch.g3_flex_privatsphare_modus
 type: conditional
 conditions:
 - condition: state
